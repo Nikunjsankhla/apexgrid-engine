@@ -31,135 +31,136 @@ public class BracketService {
                 .orElseThrow(() -> new ResourceNotFoundException("Tournament not found with ID: " + tournamentId));
 
         if (tournament.getStatus() != TournamentStatus.REGISTRATION_OPEN) {
-            throw new IllegalStateException("Bracket has already been generated or tournament is inactive");
+            throw new IllegalStateException("Bracket has already been generated or tournament is closed.");
         }
 
-        List<Team> teams = new ArrayList<>(tournament.getRegisteredTeams());
-        if (teams.size() < 2) {
-            throw new IllegalStateException("At least 2 teams required to generate a bracket");
+        List<Team> registeredTeams = tournament.getRegisteredTeams();
+        int teamCount = registeredTeams.size();
+
+        if (teamCount != tournament.getMaxTeams()) {
+            throw new IllegalStateException(
+                String.format("Cannot generate bracket: %d teams registered, but %d are required.",
+                        teamCount, tournament.getMaxTeams())
+            );
         }
 
-        Collections.shuffle(teams);
+        if ((teamCount & (teamCount - 1)) != 0 || teamCount < 2) {
+            throw new IllegalArgumentException("Registered team count must be a power of two (2, 4, 8, 16).");
+        }
 
-        int totalTeams = teams.size();
-        int round1Matches = totalTeams / 2;
+        List<Team> shuffledTeams = new ArrayList<>(registeredTeams);
+        Collections.shuffle(shuffledTeams);
+
+        int totalRounds = (int) (Math.log(teamCount) / Math.log(2));
         List<MatchFixture> allFixtures = new ArrayList<>();
 
-        // Generate Round 1 Fixtures
-        for (int i = 0; i < round1Matches; i++) {
-            MatchFixture fixture = MatchFixture.builder()
-                    .tournament(tournament)
-                    .roundNumber(1)
-                    .matchNumberInRound(i + 1)
-                    .teamA(teams.get(i * 2))
-                    .teamB(teams.get(i * 2 + 1))
-                    .status(MatchStatus.SCHEDULED)
-                    .build();
-            allFixtures.add(fixture);
-        }
-
-        // Pre-create empty placeholder slots for subsequent rounds
-        int currentRoundTeams = round1Matches;
-        int roundNumber = 2;
-        while (currentRoundTeams > 1) {
-            int nextRoundMatches = currentRoundTeams / 2;
-            for (int i = 0; i < nextRoundMatches; i++) {
-                MatchFixture placeholder = MatchFixture.builder()
+        for (int round = 1; round <= totalRounds; round++) {
+            int matchesInRound = teamCount / (int) Math.pow(2, round);
+            for (int matchNum = 1; matchNum <= matchesInRound; matchNum++) {
+                MatchFixture fixture = MatchFixture.builder()
                         .tournament(tournament)
-                        .roundNumber(roundNumber)
-                        .matchNumberInRound(i + 1)
+                        .roundNumber(round)
+                        .matchNumberInRound(matchNum)
                         .status(MatchStatus.SCHEDULED)
                         .build();
-                allFixtures.add(placeholder);
+
+                if (round == 1) {
+                    fixture.setTeamA(shuffledTeams.get((matchNum - 1) * 2));
+                    fixture.setTeamB(shuffledTeams.get((matchNum - 1) * 2 + 1));
+                }
+
+                allFixtures.add(fixture);
             }
-            currentRoundTeams = nextRoundMatches;
-            roundNumber++;
         }
 
+        List<MatchFixture> savedFixtures = matchFixtureRepository.saveAll(allFixtures);
         tournament.setStatus(TournamentStatus.IN_PROGRESS);
         tournamentRepository.save(tournament);
-        List<MatchFixture> savedFixtures = matchFixtureRepository.saveAll(allFixtures);
 
         return savedFixtures.stream().map(this::mapToMatchResponse).toList();
     }
 
     @Transactional
     public MatchResponseDTO submitScore(Long matchId, SubmitScoreRequestDTO request) {
-        MatchFixture match = matchFixtureRepository.findById(matchId)
-                .orElseThrow(() -> new ResourceNotFoundException("Match fixture not found with ID: " + matchId));
-
-        if (match.getTeamA() == null || match.getTeamB() == null) {
-            throw new IllegalStateException("Both teams must be resolved before submitting scores");
+        if (request.getScoreTeamA() == request.getScoreTeamB()) {
+            throw new IllegalArgumentException("Single-elimination matches cannot end in a draw. One team must win.");
         }
+
+        if (request.getScoreTeamA() < 0 || request.getScoreTeamB() < 0) {
+            throw new IllegalArgumentException("Scores cannot be negative values.");
+        }
+
+        MatchFixture match = matchFixtureRepository.findById(matchId)
+                .orElseThrow(() -> new ResourceNotFoundException("Match not found with ID: " + matchId));
 
         if (match.getStatus() == MatchStatus.COMPLETED) {
-            throw new IllegalStateException("Match score has already been submitted");
+            throw new IllegalStateException("Match score has already been submitted and completed.");
         }
 
-        if (request.getScoreTeamA().equals(request.getScoreTeamB())) {
-            throw new IllegalStateException("Draws not supported; tournament matches require an outright winner");
+        if (match.getTeamA() == null || match.getTeamB() == null) {
+            throw new IllegalStateException("Cannot submit scores for an unresolved match.");
         }
 
         match.setScoreTeamA(request.getScoreTeamA());
         match.setScoreTeamB(request.getScoreTeamB());
-        match.setStatus(MatchStatus.COMPLETED);
 
-        Team winner = request.getScoreTeamA() > request.getScoreTeamB() ? match.getTeamA() : match.getTeamB();
+        Team winner = (request.getScoreTeamA() > request.getScoreTeamB()) ? match.getTeamA() : match.getTeamB();
         match.setWinner(winner);
+        match.setStatus(MatchStatus.COMPLETED);
         matchFixtureRepository.save(match);
 
-        advanceWinnerToNextRound(match, winner);
+        advanceWinner(match, winner);
 
         return mapToMatchResponse(match);
     }
 
-    @Transactional(readOnly = true)
-    public List<MatchResponseDTO> getTournamentMatches(Long tournamentId) {
-        return matchFixtureRepository.findByTournamentIdOrderByRoundNumberAscMatchNumberInRoundAsc(tournamentId)
-                .stream()
-                .map(this::mapToMatchResponse)
-                .toList();
-    }
+    private void advanceWinner(MatchFixture currentMatch, Team winner) {
+        int nextRound = currentMatch.getRoundNumber() + 1;
+        int nextMatchNum = (int) Math.ceil(currentMatch.getMatchNumberInRound() / 2.0);
 
-    private void advanceWinnerToNextRound(MatchFixture currentMatch, Team winner) {
-        int nextRoundNumber = currentMatch.getRoundNumber() + 1;
-        int nextMatchNumber = (int) Math.ceil(currentMatch.getMatchNumberInRound() / 2.0);
+        var nextMatchOpt = matchFixtureRepository
+                .findByTournamentIdAndRoundNumberAndMatchNumberInRound(
+                        currentMatch.getTournament().getId(),
+                        nextRound,
+                        nextMatchNum
+                );
 
-        List<MatchFixture> matches = matchFixtureRepository
-                .findByTournamentIdOrderByRoundNumberAscMatchNumberInRoundAsc(currentMatch.getTournament().getId());
-
-        MatchFixture nextMatch = matches.stream()
-                .filter(m -> m.getRoundNumber().equals(nextRoundNumber) && m.getMatchNumberInRound().equals(nextMatchNumber))
-                .findFirst()
-                .orElse(null);
-
-        if (nextMatch != null) {
-            // If current match index was odd -> fills Team A, if even -> fills Team B
+        if (nextMatchOpt.isPresent()) {
+            MatchFixture nextMatch = nextMatchOpt.get();
             if (currentMatch.getMatchNumberInRound() % 2 != 0) {
                 nextMatch.setTeamA(winner);
             } else {
                 nextMatch.setTeamB(winner);
             }
+
             matchFixtureRepository.save(nextMatch);
         } else {
-            // Reached the pinnacle round -> this was the final!
             Tournament tournament = currentMatch.getTournament();
             tournament.setStatus(TournamentStatus.COMPLETED);
             tournamentRepository.save(tournament);
         }
     }
 
-    private MatchResponseDTO mapToMatchResponse(MatchFixture m) {
+    @Transactional(readOnly = true)
+    public List<MatchResponseDTO> getTournamentMatches(Long tournamentId) {
+        return matchFixtureRepository
+                .findByTournamentIdOrderByRoundNumberAscMatchNumberInRoundAsc(tournamentId)
+                .stream()
+                .map(this::mapToMatchResponse)
+                .toList();
+    }
+
+    private MatchResponseDTO mapToMatchResponse(MatchFixture fixture) {
         return MatchResponseDTO.builder()
-                .matchId(m.getId())
-                .roundNumber(m.getRoundNumber())
-                .matchNumberInRound(m.getMatchNumberInRound())
-                .teamAName(m.getTeamA() != null ? m.getTeamA().getTeamName() : "TBD")
-                .teamBName(m.getTeamB() != null ? m.getTeamB().getTeamName() : "TBD")
-                .scoreTeamA(m.getScoreTeamA())
-                .scoreTeamB(m.getScoreTeamB())
-                .winnerName(m.getWinner() != null ? m.getWinner().getTeamName() : null)
-                .status(m.getStatus())
+                .matchId(fixture.getId())
+                .roundNumber(fixture.getRoundNumber())
+                .matchNumberInRound(fixture.getMatchNumberInRound())
+                .status(fixture.getStatus())
+                .teamAName(fixture.getTeamA() != null ? fixture.getTeamA().getTeamName() : "TBD")
+                .teamBName(fixture.getTeamB() != null ? fixture.getTeamB().getTeamName() : "TBD")
+                .scoreTeamA(fixture.getScoreTeamA())
+                .scoreTeamB(fixture.getScoreTeamB())
+                .winnerName(fixture.getWinner() != null ? fixture.getWinner().getTeamName() : null)
                 .build();
     }
 }
