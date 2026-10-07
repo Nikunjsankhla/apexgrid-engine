@@ -2,6 +2,7 @@ package com.apexgrid.engine.service;
 
 import com.apexgrid.engine.dto.request.SubmitScoreRequestDTO;
 import com.apexgrid.engine.dto.response.MatchResponseDTO;
+import com.apexgrid.engine.dto.response.TeamStandingDTO;
 import com.apexgrid.engine.entity.MatchFixture;
 import com.apexgrid.engine.entity.Team;
 import com.apexgrid.engine.entity.Tournament;
@@ -148,6 +149,59 @@ public class BracketService {
                 .stream()
                 .map(this::mapToMatchResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeamStandingDTO> getTournamentStandings(Long tournamentId) {
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tournament not found with ID: " + tournamentId));
+
+        List<MatchFixture> matches = matchFixtureRepository
+                .findByTournamentIdOrderByRoundNumberAscMatchNumberInRoundAsc(tournamentId);
+
+        List<Team> teams = tournament.getRegisteredTeams();
+
+        return teams.stream().map(team -> {
+            int played = 0;
+            int won = 0;
+            int lost = 0;
+            int roundsWon = 0;
+
+            for (MatchFixture m : matches) {
+                if (m.getStatus() == MatchStatus.COMPLETED) {
+                    boolean isTeamA = m.getTeamA() != null && m.getTeamA().getId().equals(team.getId());
+                    boolean isTeamB = m.getTeamB() != null && m.getTeamB().getId().equals(team.getId());
+
+                    if (isTeamA || isTeamB) {
+                        played++;
+                        if (m.getWinner() != null && m.getWinner().getId().equals(team.getId())) {
+                            won++;
+                        } else {
+                            lost++;
+                        }
+
+                        if (isTeamA && m.getScoreTeamA() != null) {
+                            roundsWon += m.getScoreTeamA();
+                        } else if (isTeamB && m.getScoreTeamB() != null) {
+                            roundsWon += m.getScoreTeamB();
+                        }
+                    }
+                }
+            }
+
+            double winRate = played > 0 ? ((double) won / played) * 100.0 : 0.0;
+
+            return TeamStandingDTO.builder()
+                    .teamId(team.getId())
+                    .teamName(team.getTeamName())
+                    .matchesPlayed(played)
+                    .matchesWon(won)
+                    .matchesLost(lost)
+                    .totalRoundsWon(roundsWon)
+                    .winRatePercentage(Math.round(winRate * 10.0) / 10.0)
+                    .build();
+        }).sorted((a, b) -> Integer.compare(b.getMatchesWon(), a.getMatchesWon()))
+          .toList();
     }
 
     private MatchResponseDTO mapToMatchResponse(MatchFixture fixture) {

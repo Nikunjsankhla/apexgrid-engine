@@ -2,6 +2,7 @@ package com.apexgrid.engine.controller;
 
 import com.apexgrid.engine.dto.request.SubmitScoreRequestDTO;
 import com.apexgrid.engine.dto.response.MatchResponseDTO;
+import com.apexgrid.engine.dto.response.TeamStandingDTO;
 import com.apexgrid.engine.service.BracketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,5 +36,11 @@ public class BracketController {
             @PathVariable Long matchId,
             @Valid @RequestBody SubmitScoreRequestDTO request) {
         return bracketService.submitScore(matchId, request);
+    }
+
+    @GetMapping("/tournaments/{tournamentId}/standings")
+    @ResponseStatus(HttpStatus.OK)
+    public List<TeamStandingDTO> getTournamentStandings(@PathVariable Long tournamentId) {
+        return bracketService.getTournamentStandings(tournamentId);
     }
 }
