@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexGrid // Esports Tournament Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #080c14; color: #f1f5f9; }
+    .heading-font { font-family: 'Rajdhani', sans-serif; }
+    .card-bg { background-color: #0f172a; border: 1px solid #1e293b; }
+    .glow-gold { box-shadow: 0 0 25px rgba(234, 179, 8, 0.25); border-color: rgba(234, 179, 8, 0.6); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="border-b border-slate-800 bg-[#0b1120]/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-6">
+      <div onclick="switchView('home')" class="flex items-center space-x-3 cursor-pointer">
+        <div class="w-8 h-8 rounded bg-cyan-500 flex items-center justify-center font-bold text-black heading-font text-xl">A</div>
+        <span class="text-xl font-bold tracking-wider text-cyan-400 heading-font uppercase">ApexGrid Engine</span>
+      </div>
+      <nav class="hidden md:flex items-center space-x-4 text-xs font-semibold uppercase tracking-wider">
+        <button onclick="switchView('home')" id="navHome" class="text-cyan-400 hover:text-white transition">Home</button>
+        <button onclick="switchView('engine')" id="navEngine" class="text-slate-400 hover:text-white transition">Tournaments</button>
+        <button onclick="switchView('about')" id="navAbout" class="text-slate-400 hover:text-white transition">About</button>
+      </nav>
+    </div>
+
+    <div class="flex items-center space-x-4">
+      <div id="authStatus" class="flex items-center space-x-3">
+        <button onclick="openAuthModal('login')" class="text-xs uppercase font-semibold px-4 py-2 rounded border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white transition">Sign In</button>
+        <button onclick="openAuthModal('signup')" class="text-xs uppercase font-semibold px-4 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black transition">Sign Up</button>
+      </div>
+      <div id="userProfile" class="hidden items-center space-x-3">
+        <span id="userBadge" class="text-xs font-mono px-3 py-1.5 rounded bg-slate-800 text-cyan-300 border border-slate-700"></span>
+        <button onclick="logout()" class="text-xs px-2.5 py-1 text-rose-400 hover:text-rose-300 border border-rose-900 rounded">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= VIEW 1: HOME PAGE ================= -->
+  <section id="viewHome" class="flex-1 max-w-6xl w-full mx-auto p-6 flex flex-col justify-center items-center text-center space-y-8 my-auto">
+    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-cyan-950/70 border border-cyan-800 text-cyan-400 text-xs">
+      <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+      <span>ApexGrid Engine 1.0 &bull; Live Tournament Orchestrator</span>
+    </div>
+    <h1 class="text-4xl md:text-6xl font-extrabold heading-font uppercase tracking-wider text-white max-w-3xl leading-tight">
+      Orchestrate Esports Brackets With <span class="text-cyan-400">Zero Latency</span>
+    </h1>
+    <p class="text-slate-400 text-sm md:text-base max-w-xl">
+      Automated single-elimination bracket generation, real-time score verification, strict draw guards, and dynamic standing leaderboards.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+      <button onclick="switchView('engine')" class="px-6 py-3 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold uppercase text-xs tracking-wider transition">Launch Tournament Grid</button>
+      <button onclick="switchView('about')" class="px-6 py-3 rounded card-bg border border-slate-700 hover:border-slate-500 text-white font-bold uppercase text-xs tracking-wider transition">Read Architecture</button>
+    </div>
+
+    <!-- Quick Feature Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-left pt-10">
+      <div class="card-bg p-5 rounded-lg space-y-2">
+        <h3 class="font-bold text-cyan-400 text-sm heading-font uppercase">Deterministic Progression</h3>
+        <p class="text-xs text-slate-400">Winners automatically advance into downstream fixture nodes with immutable record tracking.</p>
+      </div>
+      <div class="card-bg p-5 rounded-lg space-y-2">
+        <h3 class="font-bold text-cyan-400 text-sm heading-font uppercase">Validation Guards</h3>
+        <p class="text-xs text-slate-400">Negative score prohibition and draw prevention baked directly into the backend engine service layer.</p>
+      </div>
+      <div class="card-bg p-5 rounded-lg space-y-2">
+        <h3 class="font-bold text-cyan-400 text-sm heading-font uppercase">Live Standings Calculation</h3>
+        <p class="text-xs text-slate-400">Real-time win percentages and played match statistics computed directly from match history.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 2: TOURNAMENTS ENGINE ================= -->
+  <section id="viewEngine" class="hidden flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    
+    <!-- CHAMPION BANNER (POLISH #1) -->
+    <div id="championBanner" class="hidden card-bg glow-gold p-4 rounded-lg bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/40 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="text-2xl">🏆</div>
+        <div>
+          <div class="text-xs uppercase font-bold text-amber-400 tracking-wider">Tournament Concluded</div>
+          <div class="text-lg font-bold text-white"><span id="championName" class="text-amber-300">Sentinels</span> is the Grand Champion!</div>
+        </div>
+      </div>
+      <button onclick="resetCurrentTournament()" class="text-xs px-3 py-1.5 rounded border border-amber-500/50 hover:bg-amber-500/10 text-amber-300">Play Again</button>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-800">
+      <div>
+        <h1 id="tournamentTitle" class="text-2xl md:text-3xl font-bold heading-font uppercase tracking-wide text-white">Apex Masters 2026</h1>
+        <p class="text-xs text-slate-400">Game: <span id="gameTitle" class="text-cyan-400 font-semibold">Valorant</span> &bull; <span id="tournamentMeta">Single Elimination &bull; 4 Teams</span></p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Game Selector Dropdown -->
+        <select id="tournamentSelect" onchange="onTournamentChange(this.value)" class="text-xs card-bg border border-slate-700 text-cyan-300 rounded px-3 py-1.5 focus:outline-none focus:border-cyan-400 font-semibold cursor-pointer">
+          <option value="1">Valorant: Apex Masters 2026</option>
+          <option value="2">CS2: Major Championship</option>
+          <option value="3">Fortnite: Champion Series</option>
+          <option value="4">Rocket League: World Invitational</option>
+        </select>
+
+        <button onclick="resetCurrentTournament()" class="text-xs font-semibold px-4 py-2 rounded card-bg hover:border-amber-500 text-amber-400 transition">Reset Scores</button>
+        <button onclick="refreshData()" class="text-xs font-semibold px-4 py-2 rounded card-bg hover:border-cyan-500 text-cyan-400 transition">Sync Live API</button>
+      </div>
+    </div>
+
+    <!-- 2-COLUMN LAYOUT -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- TOURNAMENT BRACKET -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 class="text-lg font-bold uppercase heading-font text-slate-200">Knockout Brackets</h2>
+          
+          <!-- MATCH STATUS FILTER (POLISH #2) -->
+          <div class="inline-flex rounded-lg border border-slate-800 p-0.5 bg-slate-900/60 text-xs">
+            <button onclick="setFilter('ALL')" id="filterALL" class="px-2.5 py-1 rounded bg-cyan-500 text-black font-semibold">All</button>
+            <button onclick="setFilter('SCHEDULED')" id="filterSCHEDULED" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">Upcoming</button>
+            <button onclick="setFilter('COMPLETED')" id="filterCOMPLETED" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">Finished</button>
+          </div>
+        </div>
+
+        <div id="bracketContainer" class="space-y-4"></div>
+      </div>
+
+      <!-- STANDINGS LEADERBOARD & ROSTERS -->
+      <div class="space-y-6">
+        <div class="space-y-3">
+          <h2 class="text-lg font-bold uppercase heading-font text-slate-200">Standings Leaderboard</h2>
+          <div class="card-bg rounded-lg overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-900/60 text-slate-400 border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Team</th>
+                  <th class="p-3 text-center">P</th>
+                  <th class="p-3 text-center">W</th>
+                  <th class="p-3 text-right">Win%</th>
+                </tr>
+              </thead>
+              <tbody id="standingsTable" class="divide-y divide-slate-800/60 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <h2 class="text-lg font-bold uppercase heading-font text-slate-200">Registered Rosters</h2>
+          <div id="teamsContainer" class="grid grid-cols-2 gap-2 text-xs"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VIEW 3: ABOUT PAGE ================= -->
+  <section id="viewAbout" class="hidden flex-1 max-w-5xl w-full mx-auto p-6 space-y-6 my-auto">
+    <div class="space-y-2 border-b border-slate-800 pb-4">
+      <h1 class="text-3xl font-bold heading-font uppercase text-white">About ApexGrid Engine</h1>
+      <p class="text-xs text-slate-400">Architectural blueprint and tournament validation specifications</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-slate-300">
+      <div class="card-bg p-5 rounded-lg space-y-3">
+        <h3 class="text-cyan-400 font-bold heading-font text-sm uppercase">1. System Architecture</h3>
+        <p>Built with Java 17 and Spring Boot on the backend, interacting directly with MySQL 8.0 over Spring Data JPA. Serves responsive client assets without heavy frontend framework runtimes.</p>
+        <p>Interactive endpoints and schema contracts are documented via OpenAPI 3.1 &amp; Swagger UI at <a href="/swagger-ui/index.html" target="_blank" class="text-cyan-400 underline font-mono">/swagger-ui/index.html</a>.</p>
+      </div>
+
+      <div class="card-bg p-5 rounded-lg space-y-3">
+        <h3 class="text-cyan-400 font-bold heading-font text-sm uppercase">2. Core Match Invariants</h3>
+        <ul class="list-disc pl-4 space-y-1 text-slate-400">
+          <li><strong>Draw Prevention:</strong> Single-elimination formats require an outright winner; tie submissions are rejected.</li>
+          <li><strong>Non-Negative Guards:</strong> Negative integers are rejected before reaching database persistence.</li>
+          <li><strong>Deterministic Advancement:</strong> Advancing rounds update both upstream winners and downstream brackets.</li>
+        </ul>
+      </div>
+
+      <div class="card-bg p-5 rounded-lg space-y-3">
+        <h3 class="text-cyan-400 font-bold heading-font text-sm uppercase">3. Relational Schema</h3>
+        <p>Uses four normalized entity tables: <code class="text-cyan-300">tournaments</code>, <code class="text-cyan-300">teams</code>, <code class="text-cyan-300">players</code>, and <code class="text-cyan-300">matches</code> (<code class="text-cyan-300">MatchFixture</code>).</p>
+      </div>
+
+      <div class="card-bg p-5 rounded-lg space-y-3">
+        <h3 class="text-cyan-400 font-bold heading-font text-sm uppercase">4. Getting Started</h3>
+        <p>Select any game tournament using the dropdown in the Tournaments view, register an account, and enter match scores to observe live winner progression and standings updates.</p>
+      </div>
+    </div>
+
+    <div class="pt-4 flex justify-center">
+      <button onclick="switchView('engine')" class="px-6 py-2.5 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold uppercase text-xs tracking-wider transition">Enter Tournament Grid</button>
+    </div>
+  </section>
+
+  <!-- ================= SITE FOOTER ================= -->
+  <footer class="border-t border-slate-800 bg-[#070b12] px-6 py-6 mt-12 text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+      <div class="flex items-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span class="text-slate-300 font-semibold">ApexGrid Tournament Engine &bull; Port 8080 Active</span>
+      </div>
+
+      <!-- Footer Quick Navigation Links -->
+      <div class="flex items-center space-x-6">
+        <button onclick="switchView('home')" class="hover:text-cyan-400 transition">Home</button>
+        <button onclick="switchView('engine')" class="hover:text-cyan-400 transition">Tournaments</button>
+        <button onclick="switchView('about')" class="hover:text-cyan-400 transition">About System</button>
+        <button onclick="openAuthModal('signup')" class="text-cyan-400 hover:underline">Create Account</button>
+      </div>
+
+      <div class="text-[11px] text-slate-500 font-mono">
+        ApexGrid Engine &copy; 2026
+      </div>
+    </div>
+  </footer>
+
+  <!-- AUTHENTICATION MODAL -->
+  <div id="authModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="card-bg w-full max-w-sm rounded-lg p-6 space-y-4 border border-slate-700">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 id="authTitle" class="text-lg font-bold uppercase heading-font text-cyan-400">Sign In</h3>
+        <button onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+      </div>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs uppercase font-medium text-slate-400 mb-1">Email</label>
+          <input type="email" id="authEmail" required class="w-full text-xs px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-500">
+        </div>
+        <div>
+          <label class="block text-xs uppercase font-medium text-slate-400 mb-1">Password</label>
+          <input type="password" id="authPassword" minlength="6" required class="w-full text-xs px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-500">
+        </div>
+        <div id="confirmPasswordGroup" class="hidden">
+          <label class="block text-xs uppercase font-medium text-slate-400 mb-1">Confirm Password</label>
+          <input type="password" id="authConfirmPassword" class="w-full text-xs px-3 py-2 rounded bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-500">
+        </div>
+
+        <p id="authError" class="text-xs text-rose-400 hidden"></p>
+
+        <button type="submit" id="authSubmitBtn" class="w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs uppercase rounded transition">Sign In</button>
+      </form>
+
+      <p class="text-center text-xs text-slate-400 pt-2 border-t border-slate-800">
+        <span id="authToggleText">Need an account?</span>
+        <button type="button" onclick="toggleAuthMode()" id="authToggleBtn" class="text-cyan-400 hover:underline font-semibold ml-1">Sign Up</button>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    let activeTournamentId = '1';
+    let authMode = 'login';
+    let currentFilter = 'ALL';
+
+    const tournamentCatalog = {
+      '1': {
+        id: 1,
+        title: 'Apex Masters 2026',
+        game: 'Valorant',
+        teams: [
+          { name: 'Sentinels', captain: 'Sentinels_Cap', role: 'Duelist' },
+          { name: 'Fnatic', captain: 'Fnatic_Cap', role: 'Initiator' },
+          { name: 'Paper Rex', captain: 'PaperRex_Cap', role: 'Duelist' },
+          { name: 'Team Liquid', captain: 'TeamLiquid_Cap', role: 'Sentinel' }
+        ],
+        matches: [
+          { matchId: 101, roundNumber: 1, matchNumberInRound: 1, teamAName: 'Sentinels', teamBName: 'Fnatic', scoreTeamA: 13, scoreTeamB: 9, winnerName: 'Sentinels', status: 'COMPLETED', time: '17:00 UTC' },
+          { matchId: 102, roundNumber: 1, matchNumberInRound: 2, teamAName: 'Paper Rex', teamBName: 'Team Liquid', scoreTeamA: 11, scoreTeamB: 13, winnerName: 'Team Liquid', status: 'COMPLETED', time: '18:30 UTC' },
+          { matchId: 103, roundNumber: 2, matchNumberInRound: 1, teamAName: 'Sentinels', teamBName: 'Team Liquid', scoreTeamA: null, scoreTeamB: null, winnerName: null, status: 'SCHEDULED', time: 'Today &bull; 20:00 UTC' }
+        ]
+      },
+      '2': {
+        id: 2,
+        title: 'Major Championship 2026',
+        game: 'CS2',
+        teams: [
+          { name: 'Natus Vincere', captain: 's1mple_lead', role: 'AWPer' },
+          { name: 'FaZe Clan', captain: 'karrigan_igl', role: 'IGL' },
+          { name: 'Vitality', captain: 'ZywOo_star', role: 'Rifler' },
+          { name: 'G2 Esports', captain: 'm0NESY_snip', role: 'Entry' }
+        ],
+        matches: [
+          { matchId: 201, roundNumber: 1, matchNumberInRound: 1, teamAName: 'Natus Vincere', teamBName: 'FaZe Clan', scoreTeamA: 16, scoreTeamB: 12, winnerName: 'Natus Vincere', status: 'COMPLETED', time: '15:00 UTC' },
+          { matchId: 202, roundNumber: 1, matchNumberInRound: 2, teamAName: 'Vitality', teamBName: 'G2 Esports', scoreTeamA: 14, scoreTeamB: 16, winnerName: 'G2 Esports', status: 'COMPLETED', time: '16:30 UTC' },
+          { matchId: 203, roundNumber: 2, matchNumberInRound: 1, teamAName: 'Natus Vincere', teamBName: 'G2 Esports', scoreTeamA: null, scoreTeamB: null, winnerName: null, status: 'SCHEDULED', time: 'Today &bull; 19:30 UTC' }
+        ]
+      },
+      '3': {
+        id: 3,
+        title: 'Fortnite Champion Series',
+        game: 'Fortnite',
+        teams: [
+          { name: 'Zone Warriors', captain: 'Bugha_Clone', role: 'Builder' },
+          { name: 'Storm Walkers', captain: 'Mongraal_Pace', role: 'Fragger' },
+          { name: 'Victory Vipers', captain: 'Mero_Clutch', role: 'Support' },
+          { name: 'Loot Titans', captain: 'TaySon_Grid', role: 'Anchor' }
+        ],
+        matches: [
+          { matchId: 301, roundNumber: 1, matchNumberInRound: 1, teamAName: 'Zone Warriors', teamBName: 'Storm Walkers', scoreTeamA: 85, scoreTeamB: 62, winnerName: 'Zone Warriors', status: 'COMPLETED', time: '14:00 UTC' },
+          { matchId: 302, roundNumber: 1, matchNumberInRound: 2, teamAName: 'Victory Vipers', teamBName: 'Loot Titans', scoreTeamA: null, scoreTeamB: null, winnerName: null, status: 'SCHEDULED', time: 'Today &bull; 15:30 UTC' },
+          { matchId: 303, roundNumber: 2, matchNumberInRound: 1, teamAName: 'Zone Warriors', teamBName: 'TBD', scoreTeamA: null, scoreTeamB: null, winnerName: null, status: 'SCHEDULED', time: 'Today &bull; 18:00 UTC' }
+        ]
+      },
+      '4': {
+        id: 4,
+        title: 'World Invitational',
+        game: 'Rocket League',
+        teams: [
+          { name: 'Karmine Corp', captain: 'Vatira_Aerial', role: 'Striker' },
+          { name: 'Gen.G Mobil1', captain: 'Chronic_Goal', role: 'Midfield' },
+          { name: 'BDS Esports', captain: 'MonkeyMoon_Def', role: 'Goalkeeper' },
+          { name: 'G2 Stride', captain: 'Atomic_Rot', role: 'Flex' }
+        ],
+        matches: [
+          { matchId: 401, roundNumber: 1, matchNumberInRound: 1, teamAName: 'Karmine Corp', teamBName: 'Gen.G Mobil1', scoreTeamA: 4, scoreTeamB: 2, winnerName: 'Karmine Corp', status: 'COMPLETED', time: '13:00 UTC' },
+          { matchId: 402, roundNumber: 1, matchNumberInRound: 2, teamAName: 'BDS Esports', teamBName: 'G2 Stride', scoreTeamA: 3, scoreTeamB: 1, winnerName: 'BDS Esports', status: 'COMPLETED', time: '14:00 UTC' },
+          { matchId: 403, roundNumber: 2, matchNumberInRound: 1, teamAName: 'Karmine Corp', teamBName: 'BDS Esports', scoreTeamA: 4, scoreTeamB: 3, winnerName: 'Karmine Corp', status: 'COMPLETED', time: '16:00 UTC' }
+        ]
+      }
+    };
+
+    // SPA VIEW ROUTER
+    function switchView(view) {
+      document.getElementById('viewHome').classList.add('hidden');
+      document.getElementById('viewEngine').classList.add('hidden');
+      document.getElementById('viewAbout').classList.add('hidden');
+
+      document.getElementById('navHome').className = 'text-slate-400 hover:text-white transition';
+      document.getElementById('navEngine').className = 'text-slate-400 hover:text-white transition';
+      document.getElementById('navAbout').className = 'text-slate-400 hover:text-white transition';
+
+      if (view === 'home') {
+        document.getElementById('viewHome').classList.remove('hidden');
+        document.getElementById('navHome').className = 'text-cyan-400 hover:text-white transition';
+      } else if (view === 'engine') {
+        document.getElementById('viewEngine').classList.remove('hidden');
+        document.getElementById('navEngine').className = 'text-cyan-400 hover:text-white transition';
+        renderView();
+      } else if (view === 'about') {
+        document.getElementById('viewAbout').classList.remove('hidden');
+        document.getElementById('navAbout').className = 'text-cyan-400 hover:text-white transition';
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setFilter(status) {
+      currentFilter = status;
+      ['ALL', 'SCHEDULED', 'COMPLETED'].forEach(s => {
+        const btn = document.getElementById(`filter${s}`);
+        if (s === status) {
+          btn.className = 'px-2.5 py-1 rounded bg-cyan-500 text-black font-semibold';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded text-slate-400 hover:text-white';
+        }
+      });
+      renderView();
+    }
+
+    function onTournamentChange(id) {
+      activeTournamentId = id;
+      renderView();
+    }
+
+    function calculateStandings(teams, matches) {
+      return teams.map(t => {
+        let played = 0;
+        let won = 0;
+        matches.forEach(m => {
+          if (m.status === 'COMPLETED' && (m.teamAName === t.name || m.teamBName === t.name)) {
+            played++;
+            if (m.winnerName === t.name) won++;
+          }
+        });
+        const winRate = played > 0 ? Math.round((won / played) * 100) : 0;
+        return { teamName: t.name, matchesPlayed: played, matchesWon: won, winRatePercentage: winRate };
+      }).sort((a, b) => b.matchesWon - a.matchesWon || b.winRatePercentage - a.winRatePercentage);
+    }
+
+    function renderView() {
+      const tourney = tournamentCatalog[activeTournamentId];
+      if (!tourney) return;
+
+      document.getElementById('tournamentTitle').textContent = tourney.title;
+      document.getElementById('gameTitle').textContent = tourney.game;
+
+      // Check for Champion (Polish #1)
+      const grandFinal = tourney.matches.find(m => m.roundNumber === 2);
+      const championBanner = document.getElementById('championBanner');
+      if (grandFinal && grandFinal.status === 'COMPLETED' && grandFinal.winnerName) {
+        document.getElementById('championName').textContent = grandFinal.winnerName;
+        championBanner.classList.remove('hidden');
+      } else {
+        championBanner.classList.add('hidden');
+      }
+
+      // Render Rosters
+      document.getElementById('teamsContainer').innerHTML = tourney.teams.map(t => `
+        <div class="card-bg p-3 rounded border border-slate-800">
+          <div class="font-bold text-cyan-400">${t.name}</div>
+          <div class="text-[10px] text-slate-400 font-mono">Captain: ${t.captain}</div>
+          <div class="text-[10px] text-slate-500 font-mono">Role: ${t.role}</div>
+        </div>
+      `).join('');
+
+      // Filter Matches (Polish #2)
+      const filteredMatches = tourney.matches.filter(m => currentFilter === 'ALL' || m.status === currentFilter);
+
+      // Render Bracket Matches with Timestamps (Polish #3)
+      const container = document.getElementById('bracketContainer');
+      if (!filteredMatches.length) {
+        container.innerHTML = '<div class="text-xs text-slate-500 py-6 text-center card-bg rounded-lg">No matches match current filter.</div>';
+      } else {
+        container.innerHTML = filteredMatches.map(m => {
+          const completed = m.status === 'COMPLETED';
+          const teamA = m.teamAName || 'TBD';
+          const teamB = m.teamBName || 'TBD';
+          const canSubmit = !completed && teamA !== 'TBD' && teamB !== 'TBD';
+
+          return `
+            <div class="card-bg p-4 rounded-lg space-y-3">
+              <div class="flex justify-between items-center text-xs">
+                <div class="flex items-center space-x-2">
+                  <span class="font-mono text-cyan-400">${m.roundNumber === 1 ? 'Semifinal' : 'Grand Final'} &bull; Match #${m.matchNumberInRound}</span>
+                  <span class="text-[11px] text-slate-500 font-mono">(${m.time || 'TBD'})</span>
+                </div>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${completed ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-slate-800 text-slate-300'}">${m.status}</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800 flex justify-between items-center ${m.winnerName === teamA ? 'border-emerald-500 text-emerald-400 font-bold' : ''}">
+                  <span class="font-semibold">${teamA}</span>
+                  <span class="font-mono font-bold">${m.scoreTeamA !== null && m.scoreTeamA !== undefined ? m.scoreTeamA : '-'}</span>
+                </div>
+                <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800 flex justify-between items-center ${m.winnerName === teamB ? 'border-emerald-500 text-emerald-400 font-bold' : ''}">
+                  <span class="font-semibold">${teamB}</span>
+                  <span class="font-mono font-bold">${m.scoreTeamB !== null && m.scoreTeamB !== undefined ? m.scoreTeamB : '-'}</span>
+                </div>
+              </div>
+
+              ${canSubmit ? `
+                <div class="pt-2 flex items-center justify-end space-x-2 border-t border-slate-800/80">
+                  <input type="number" min="0" id="scoreA_${m.matchId}" placeholder="0" class="w-14 text-center text-xs py-1 rounded bg-slate-900 border border-slate-700 text-white">
+                  <span class="text-xs text-slate-500">:</span>
+                  <input type="number" min="0" id="scoreB_${m.matchId}" placeholder="0" class="w-14 text-center text-xs py-1 rounded bg-slate-900 border border-slate-700 text-white">
+                  <button onclick="submitScore(${m.matchId})" class="text-xs px-3 py-1 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded transition">Submit Score</button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Standings
+      const standings = calculateStandings(tourney.teams, tourney.matches);
+      document.getElementById('standingsTable').innerHTML = standings.map(s => `
+        <tr class="hover:bg-slate-800/30">
+          <td class="p-3 font-semibold text-slate-200">${s.teamName}</td>
+          <td class="p-3 text-center text-slate-400">${s.matchesPlayed}</td>
+          <td class="p-3 text-center text-emerald-400">${s.matchesWon}</td>
+          <td class="p-3 text-right text-cyan-400">${s.winRatePercentage}%</td>
+        </tr>
+      `).join('');
+    }
+
+    async function submitScore(matchId) {
+      const tourney = tournamentCatalog[activeTournamentId];
+      const match = tourney.matches.find(m => m.matchId === matchId);
+      if (!match) return;
+
+      const scoreA = parseInt(document.getElementById(`scoreA_${matchId}`).value, 10);
+      const scoreB = parseInt(document.getElementById(`scoreB_${matchId}`).value, 10);
+
+      if (isNaN(scoreA) || isNaN(scoreB) || scoreA < 0 || scoreB < 0) {
+        alert('Please enter valid non-negative scores.');
+        return;
+      }
+      if (scoreA === scoreB) {
+        alert('Draws are not permitted in single-elimination brackets.');
+        return;
+      }
+
+      if (activeTournamentId === '1') {
+        try {
+          await fetch(`/api/brackets/matches/${matchId}/score`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scoreTeamA: scoreA, scoreTeamB: scoreB })
+          });
+        } catch (e) {}
+      }
+
+      match.scoreTeamA = scoreA;
+      match.scoreTeamB = scoreB;
+      match.winnerName = scoreA > scoreB ? match.teamAName : match.teamBName;
+      match.status = 'COMPLETED';
+
+      if (match.roundNumber === 1) {
+        const finalMatch = tourney.matches.find(m => m.roundNumber === 2);
+        if (finalMatch) {
+          if (match.matchNumberInRound === 1) finalMatch.teamAName = match.winnerName;
+          if (match.matchNumberInRound === 2) finalMatch.teamBName = match.winnerName;
+        }
+      }
+
+      renderView();
+    }
+
+    function resetCurrentTournament() {
+      const tourney = tournamentCatalog[activeTournamentId];
+      tourney.matches.forEach(m => {
+        m.scoreTeamA = null;
+        m.scoreTeamB = null;
+        m.winnerName = null;
+        m.status = 'SCHEDULED';
+        if (m.roundNumber === 2) {
+          m.teamAName = 'TBD';
+          m.teamBName = 'TBD';
+        }
+      });
+      renderView();
+    }
+
+    async function refreshData() {
+      if (activeTournamentId === '1') {
+        try {
+          const res = await fetch(`/api/brackets/tournaments/1/matches`);
+          if (res.ok) {
+            const liveMatches = await res.json();
+            if (liveMatches && liveMatches.length) {
+              tournamentCatalog['1'].matches = liveMatches.map(m => ({
+                matchId: m.matchId,
+                roundNumber: m.roundNumber,
+                matchNumberInRound: m.matchNumberInRound,
+                teamAName: m.teamAName || 'TBD',
+                teamBName: m.teamBName || 'TBD',
+                scoreTeamA: m.scoreTeamA,
+                scoreTeamB: m.scoreTeamB,
+                winnerName: m.winnerName,
+                status: m.status,
+                time: m.roundNumber === 1 ? '18:00 UTC' : '20:00 UTC'
+              }));
+            }
+          }
+        } catch (e) {}
+      }
+      renderView();
+    }
+
+    // AUTH MANAGEMENT
+    function initAuth() {
+      const user = localStorage.getItem('apex_user');
+      const authStatus = document.getElementById('authStatus');
+      const userProfile = document.getElementById('userProfile');
+      const userBadge = document.getElementById('userBadge');
+
+      if (user) {
+        authStatus.classList.add('hidden');
+        userProfile.classList.remove('hidden');
+        userProfile.classList.add('flex');
+        userBadge.textContent = user;
+      } else {
+        authStatus.classList.remove('hidden');
+        userProfile.classList.add('hidden');
+        userProfile.classList.remove('flex');
+      }
+    }
+
+    function openAuthModal(mode) {
+      authMode = mode;
+      document.getElementById('authError').classList.add('hidden');
+      document.getElementById('authForm').reset();
+      updateAuthModalUI();
+      document.getElementById('authModal').classList.remove('hidden');
+      document.getElementById('authModal').classList.add('flex');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').classList.add('hidden');
+      document.getElementById('authModal').classList.remove('flex');
+    }
+
+    function toggleAuthMode() {
+      authMode = authMode === 'login' ? 'signup' : 'login';
+      document.getElementById('authError').classList.add('hidden');
+      updateAuthModalUI();
+    }
+
+    function updateAuthModalUI() {
+      const isLogin = authMode === 'login';
+      document.getElementById('authTitle').textContent = isLogin ? 'Sign In' : 'Create Account';
+      document.getElementById('authSubmitBtn').textContent = isLogin ? 'Sign In' : 'Register';
+      document.getElementById('authToggleText').textContent = isLogin ? "Don't have an account?" : 'Already registered?';
+      document.getElementById('authToggleBtn').textContent = isLogin ? 'Sign Up' : 'Sign In';
+      
+      const confirmGroup = document.getElementById('confirmPasswordGroup');
+      const confirmInput = document.getElementById('authConfirmPassword');
+      if (isLogin) {
+        confirmGroup.classList.add('hidden');
+        confirmInput.removeAttribute('required');
+      } else {
+        confirmGroup.classList.remove('hidden');
+        confirmInput.setAttribute('required', 'true');
+      }
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const confirm = document.getElementById('authConfirmPassword').value;
+      const err = document.getElementById('authError');
+
+      if (authMode === 'signup' && password !== confirm) {
+        err.textContent = 'Passwords do not match.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      localStorage.setItem('apex_user', email);
+      closeAuthModal();
+      initAuth();
+    }
+
+    function logout() {
+      localStorage.removeItem('apex_user');
+      initAuth();
+    }
+
+    initAuth();
+    switchView('home');
+  </script>
+</body>
+</html>
